@@ -1,0 +1,8 @@
+pyinstaller==4.10
+autopep8
+jsons
+requests
+beautifulsoup4
+lxml
+selenium
+chromedriver-autoinstaller
