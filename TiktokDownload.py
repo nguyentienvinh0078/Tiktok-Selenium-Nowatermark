@@ -1,4 +1,5 @@
 import os, time, re, requests, json
+from tkinter import N
 import chromedriver_autoinstaller
 
 from selenium import webdriver
@@ -56,6 +57,7 @@ class TiktokDownload:
                     else [{"video_number": "1", "video_id": re.findall('video\/(\d+)', self.url_input)[0], "video_url": self.url_input}]
 
                 self.video_data = self.update_data(self.video_data)
+                
                 self.download(self.video_data)
             else:
                 break
