@@ -1,15 +1,11 @@
-from cmath import atan
-from dataclasses import dataclass
 import os, time, re, requests, json
-from tkinter import E
-from xml.dom import VALIDATION_ERR
-from urllib.robotparser import RequestRate
-from urllib import response
 import chromedriver_autoinstaller
+
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning) 
 
