@@ -105,7 +105,7 @@ class TiktokDownload:
                 print('[ Feedback ]: Nhập link thành công!')
                 print('-' * 120)
                 break
-            elif url_input == 'close':
+            elif url_input == 'close' or url_input == 'Close' or url_input == 'x':
                 break
             else:
                 print(f'[ Feedback ]: <!> Link nhập không thành công....\r')
@@ -195,7 +195,13 @@ class TiktokDownload:
             start_time = time.time()
             for retry_num in range(3):
                 self.driver.find_element_by_css_selector("#url").send_keys(video_data[i]['video_url'])
-                self.driver.find_element_by_css_selector('#submiturl').click()
+                for retry_num in range(3):
+                    try:
+                        self.driver.find_element_by_css_selector('#submiturl').click()
+                        break
+                    except:
+                        continue
+
                 try:    
                     download_1_css_selected = "div[class='abuttons mb-0'] a[title='Download Server 01']"
                     download_1 = WebDriverWait(self.driver, 10).until(
@@ -212,19 +218,30 @@ class TiktokDownload:
                     })
                     break
                 except: 
-                    again_download_css_celected = "#navbar > nav > div > div.navbar-brand > a.navbar-item"
-                    again_download = WebDriverWait(self.driver, 10).until(
-                        EC.presence_of_element_located((By.CSS_SELECTOR, again_download_css_celected))
-                    ).click()
+                    for retry_num in range(3):
+                        try:
+                            again_download_css_celected = "#navbar > nav > div > div.navbar-brand > a.navbar-item"
+                            again_download = WebDriverWait(self.driver, 10).until(
+                                EC.presence_of_element_located((By.CSS_SELECTOR, again_download_css_celected))
+                            ).click()
+                            break
+                        except:
+                            continue
+
                     continue
             
             with open(self.json_file_path, mode='w', encoding='utf-8') as json_file:
                 json.dump(video_data, json_file, indent=4, separators=(',', ': '))
 
-            again_download_css_celected = "#navbar > nav > div > div.navbar-brand > a.navbar-item"
-            again_download = WebDriverWait(self.driver, 10).until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, again_download_css_celected))
-            ).click()
+            for retry_num in range(3):
+                try:
+                    again_download_css_celected = "#navbar > nav > div > div.navbar-brand > a.navbar-item"
+                    again_download = WebDriverWait(self.driver, 10).until(
+                        EC.presence_of_element_located((By.CSS_SELECTOR, again_download_css_celected))
+                    ).click()
+                    break
+                except:
+                    continue
 
             end_time =  time.time()
             sub_time = end_time - start_time
@@ -282,7 +299,6 @@ class TiktokDownload:
                     MB_size = content_size / chunk_size / 1024
 
                     if video.status_code == 200:
-                        video_path = self.folder_save_path + '\\' + video_name
                         video_path = '{}\{}'.format(self.folder_save_path, video_name)
                         with open(file=video_path, mode='wb') as file:
                             for v_data in video.iter_content(chunk_size=chunk_size):
