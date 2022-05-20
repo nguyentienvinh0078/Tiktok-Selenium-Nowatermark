@@ -52,15 +52,25 @@ class TiktokDownload:
                     print('[ Feedback ]: Lỗi khi tạo thư mục!')
                     print('-' * 120)
                     return
-
-                self.video_data = self.scroll_data(self.url_input) if self.is_userpage \
-                    else [{"video_number": "1", "video_id": re.findall('video\/(\d+)', self.url_input)[0], "video_url": self.url_input}]
+                
+                if self.is_userpage:
+                    print('[ Feedback ]: Tải xuống nhiều video!')
+                    print('-' * 120)
+                    self.video_data = self.scroll_data(self.url_input)
+                else:
+                    print('[ Feedback ]: Tải xuống 1 video!')
+                    print('-' * 120)
+                    self.video_data = [{
+                        "video_number": "1", 
+                        "video_id": re.findall('video\/(\d+)', self.url_input)[0], 
+                        "video_url": self.url_input,
+                    }]
 
                 self.video_data = self.update_data(self.video_data)
-                
                 self.download(self.video_data)
-            else:
-                break
+                os.system('cls')
+                print('[ Feedback ]: Tải xuống hoàn tất {} video'.format(len(self.video_data)))
+            else: break
 
     def check_user_page(self, url_input):
         if 'www.tiktok.com/@' in url_input:
@@ -78,8 +88,10 @@ class TiktokDownload:
     def get_url_input(self):
         retry_max = 3
         for retry_number in range(retry_max):
-            print('\n' + '-' * 120)
-            url_input = re.sub("[^\x00-\xff]", '', input('Nhập link: ')).replace(' ', '')
+            print('-' * 120)
+            print('[ Feedback ]: Nhập vào link để tải xuống, Nhập "close" để thoát!')
+            print('-' * 120)
+            url_input = re.sub("[^\x00-\xff]", '', input('[ Nhập link ]: ')).replace(' ', '')
             print('-' * 120)
             check_input = False
             if url_input == '':
