@@ -26,7 +26,6 @@ class TiktokDownload:
             # user page link
             https://www.tiktok.com/@tinaneeeee/video/7098291042625080602?is_copy_url=1&is_from_webapp=v1
             https://www.tiktok.com/@tinaneeeee
-
             # video link
             https://vt.tiktok.com/ZSdQkfHpf/?k=1
             https://vt.tiktok.com/ZSdQk9f8J/
