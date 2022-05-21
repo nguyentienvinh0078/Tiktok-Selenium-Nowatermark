@@ -1,12 +1,9 @@
-import os, time, re, requests, json
-from tkinter import N
+import os, time, re, requests, json, sys
 import chromedriver_autoinstaller
-
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning) 
 
