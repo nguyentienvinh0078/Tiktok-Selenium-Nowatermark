@@ -86,15 +86,15 @@ class TiktokDownload:
     def check_user_page(self, url_input):
         if 'www.tiktok.com/@' in url_input:
             if '/video/' in url_input: 
-                return False, re.findall('@(\w+)', url_input)[0], url_input
+                return False, re.findall('\/@(.*)', url_input)[0], url_input
             else: 
-                return True, re.findall('@(\w+)', url_input)[0], url_input
+                return True, re.findall('\/@(.*)', url_input)[0], url_input
         else:
             response = requests.get(url=url_input, headers=self.headers)
             if '/video/' in response.url: 
-                return False, re.findall('@(\w+)', response.url)[0], response.url
+                return False, re.findall('\/@(.*)', response.url)[0], response.url
             else: 
-                return True, re.findall('@(\w+)', response.url)[0], response.url
+                return True, re.findall('\/@(.*)', response.url)[0], response.url
         
     def get_url_input(self):
         retry_max = 3

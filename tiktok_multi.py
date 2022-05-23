@@ -65,17 +65,22 @@ class TiktokDownload:
                 if self.is_userpage:
                     print('[ Feedback ]: Tải xuống nhiều video!')
                     print('-' * 120)
-                    self.video_data = self.scroll_data(self.url_input)
+                    self.video_data = self.get_data(self.url_input)
                 else:
                     print('[ Feedback ]: Tải xuống 1 video!')
                     print('-' * 120)
+                    response = requests.get(url=self.url_input, headers=self.headers)
+                    video_url = response.url
+                    video_id = re.findall('video\/(\d+)', video_url)[0]
+                    # jx_url_base = 'https://www.iesdouyin.com/web/api/v2/aweme/iteminfo/?item_ids=' # douyin
+                    tiktok_api_link = 'https://api.tiktokv.com/aweme/v1/multi/aweme/detail/?aweme_ids=%5B{}%5D'.format(video_id)
                     self.video_data = [{
-                        "video_number": "1", 
-                        "video_id": re.findall('video\/(\d+)', self.url_input)[0], 
-                        "video_url": self.url_input,
+                        "video_number": "1",
+                        "video_id": video_id,
+                        "video_url": video_url,
+                        "video_api": tiktok_api_link,
                     }]
 
-                self.video_data = self.update_data(self.video_data)
                 self.download(self.video_data)
                 os.system('cls')
                 print('[ Feedback ]: Tải xuống hoàn tất {} video'.format(len(self.video_data)))
@@ -153,8 +158,8 @@ class TiktokDownload:
         driver = webdriver.Chrome(options=options) 
         return driver
 
-    def scroll_data(self, url):
-        print(f'[ Feedback ]: Đang lấy dữ liệu video...\r')
+    def get_data(self, url):
+        print(f'[ Feedback ]: Bắt đầu lấy dữ liệu video, vui lòng đợi...\r')
         print('-' * 120)
         start_time = time.time()
         self.driver = self.init_driver('headless')
@@ -173,17 +178,20 @@ class TiktokDownload:
         
         src_elements = self.driver.find_elements_by_css_selector("div[data-e2e='user-post-item'] a")
 
-        data = []
+        video_data = []
         video_number = 1
         for src_element in src_elements:
             video_url = src_element.get_attribute('href')
-            data.append({
+            video_id = re.findall('video\/(\d+)', video_url)[0]
+            tiktok_api_link = 'https://api.tiktokv.com/aweme/v1/multi/aweme/detail/?aweme_ids=%5B{}%5D'.format(video_id)
+            video_data.append({
                 'video_number': str(video_number),
                 'video_id': (re.findall('/video/(\d+)?', video_url)[0]),
                 'video_url': video_url,
+                'video_api': f"{tiktok_api_link}",
             })
             with open(self.json_file_path, mode='w', encoding='utf-8') as json_file:
-                json.dump(data, json_file, indent=4, separators=(',', ': '))
+                json.dump(video_data, json_file, indent=4, separators=(',', ': '))
             video_number = video_number + 1
 
         self.driver.quit()
@@ -191,136 +199,90 @@ class TiktokDownload:
         sub_time = end_time - start_time
         print('[ Feedback ]: Lấy dữ liệu thành công -*- {} Video -*- Thời gian: {:.2f} giây...'.format(video_number-1, sub_time))
         print('-' * 120)
-        return data
-
-    def update_data(self, video_data):
-        print('[ Feedback ]: Đang cập nhật dữ liệu....')
-        print('-' * 120)
-        self.driver = self.init_driver('headless')
-        self.driver.get(self.download_page_url)
-        total_time = 0
-        number_of_videos = len(video_data)
-        for i in range(number_of_videos):
-            start_time = time.time()
-            for retry_num in range(3):
-                self.driver.find_element_by_css_selector("#url").send_keys(video_data[i]['video_url'])
-                for retry_num in range(3):
-                    try:
-                        self.driver.find_element_by_css_selector('#submiturl').click()
-                        break
-                    except:
-                        continue
-
-                try:    
-                    download_1_css_selected = "div[class='abuttons mb-0'] a[title='Download Server 01']"
-                    download_1 = WebDriverWait(self.driver, 10).until(
-                        EC.presence_of_element_located((By.CSS_SELECTOR, download_1_css_selected))
-                    )
-                    download_2_css_selected = "div[class='abuttons mb-0'] a[title='Download Server 02']"
-                    download_2 = self.driver.find_element_by_css_selector(download_2_css_selected)
-                    download_3_css_selected = "div[class='abuttons mb-0'] a[title='Download Server 03']"
-                    download_3 = self.driver.find_element_by_css_selector(download_3_css_selected)
-                    video_data[i].update({
-                        'download_url_1': str(download_1.get_attribute('href')),
-                        'download_url_2': str(download_2.get_attribute('href')),
-                        'download_url_3': str(download_3.get_attribute('href')),
-                    })
-                    break
-                except: 
-                    for retry_num in range(3):
-                        try:
-                            again_download_css_celected = "#navbar > nav > div > div.navbar-brand > a.navbar-item"
-                            again_download = WebDriverWait(self.driver, 10).until(
-                                EC.presence_of_element_located((By.CSS_SELECTOR, again_download_css_celected))
-                            ).click()
-                            break
-                        except:
-                            continue
-
-                    continue
-            
-            with open(self.json_file_path, mode='w', encoding='utf-8') as json_file:
-                json.dump(video_data, json_file, indent=4, separators=(',', ': '))
-
-            for retry_num in range(3):
-                try:
-                    again_download_css_celected = "#navbar > nav > div > div.navbar-brand > a.navbar-item"
-                    again_download = WebDriverWait(self.driver, 10).until(
-                        EC.presence_of_element_located((By.CSS_SELECTOR, again_download_css_celected))
-                    ).click()
-                    break
-                except:
-                    continue
-
-            end_time =  time.time()
-            sub_time = end_time - start_time
-            total_time = total_time + sub_time
-            print("\r" + "[ Feedback ]: Cập nhật {:>2}/{} -+- Thời gian: {:.2f} giây...".format(i+1, number_of_videos, total_time), end='')
-        
-        print('')
-        print('-' * 120)
-        print('[ Feedback ]: Cập nhật dữ liệu thành công')
-        print('-' * 120)
-        self.driver.quit()
         return video_data
 
     def download(self, video_data):
         number_of_videos = len(video_data)
-        for i in range(number_of_videos):
-            video_name = str(video_data[i]['video_id']) + '.mp4'
-            folder_path_listdir = os.listdir(self.folder_save_path)
+        for video_number in range(number_of_videos):
+            js = json.loads(requests.get(url=video_data[video_number]['video_api'], headers=self.headers).text)
             try:
-                if video_name in folder_path_listdir:
-                    print(f'[ Download ]: {i+1}/{number_of_videos} Tệp tên [ {video_name}.mp4 ] đã tồn tại, bỏ qua tải xuống!', end = "")
-                    for i in range(10):
+                # nickname = str(js['item_list'][0]['author']['nickname']) #douyin
+                nickname = str(js["aweme_details"][0]['author']["nickname"])
+            except Exception as bug:
+                # print(bug)
+                nickname = 'Empty Nickname'
+                print('[ Feedback ]: Không tìm được nickname, đặt thành: Empty Nickname!\r')
+                print('-' * 120)
+
+            try:
+                folder_nickname_path = f'{self.folder_save_path}\{nickname}'
+                if not os.path.exists(folder_nickname_path): 
+                    os.makedirs(folder_nickname_path)
+            except Exception as bug:
+                # print(bug)
+                print(f'[ Feedback ]: Không tạo được thư mục {nickname}!\r')
+                print('-' * 120)
+                return 
+            
+            try:
+                video_url_no_watermark = str(js["aweme_details"][0]["video"]["play_addr"]["url_list"][0])
+                # video_url_no_watermark = str(js['item_list'][0]['video']['play_addr']['url_list'][0]).replace('playwm', 'play') #douyin
+            except Exception as bug:
+                #print(bug)
+                print('[ Feedback ]: Không lấy được link video không nhãn!\r')
+                print('-' * 120)
+
+            try:
+                # create_time = time.strftime("%Y-%m-%d %H.%M.%S", time.localtime(js['item_list'][0]['create_time'])) # douyin
+                create_time = time.strftime("%Y-%m-%d %H.%M.%S", time.localtime(js["aweme_details"][0]['create_time']))
+            except Exception as bug:
+                #print(bug)
+                create_time = 'no_create_time'
+                print('[    Lỗi    ]: Không lấy được thời gian tạo video video!\r')
+                print('-' * 120)
+            
+            filename = '{} {}.mp4'.format(create_time, video_data[video_number]['video_id'])
+            nickname_path_listdir = os.listdir(folder_nickname_path)
+
+            try:
+                if filename in nickname_path_listdir:
+                    print(f'[ Download ]: {video_number+1:2>}/{number_of_videos} Tệp ID [ {filename} ] đã tồn tại, Bỏ qua tải xuống! ', end = "")
+                    for i in range(15):
                         print(">", end='', flush=True)
                         time.sleep(0.01)
                     print('\r')
                     print('-' * 120)
                     continue    
             except Exception as bug:
-                # print(bug)
+                #print(bug)
                 pass
-
-            for retry_num in range(3):
+            
+            retry_download_max = 3
+            for retry_number in range(retry_download_max):
                 try:
-                    print(f'\n[   Video    ]: {i+1: >2} / {number_of_videos}')
-                    print(f'[   Video    ]: Tải xuống video tên -- [ {video_name} ] --')
+                    print(f'\n[   Video    ]: {video_number+1}/{number_of_videos}')
+                    print(f'[   Video    ]: Đang tải tệp -- [ {filename} ] --')
                     start_download_time = time.time()
-                    for requests_num in range(3):
-                        try:
-                            video = requests.get(url=video_data[i]['download_url_1'], timeout=5, headers=self.headers)
-                            break
-                        except Exception as bug:
-                            # print(bug)
-                            continue
-                    try:
-                        content_size = int(video.headers['content-length'])
-                    except Exception as bug:
-                        video = requests.get(url=video_data[i]['download_url_2'], timeout=5, headers=self.headers)
-                        try:
-                            content_size = int(video.headers['content-length'])
-                        except Exception as bug:
-                            video = requests.get(url=video_data[i]['download_url_3'], timeout=5, headers=self.headers)
-                            content_size = int(video.headers['content-length'])
                     size = 0
                     chunk_size = 1024
+                    video = requests.get(url=video_url_no_watermark, headers=self.headers)
+                    content_size = int(video.headers['content-length'])
                     MB_size = content_size / chunk_size / 1024
 
                     if video.status_code == 200:
-                        video_path = '{}\{}'.format(self.folder_save_path, video_name)
+                        video_path = f'{folder_nickname_path}\{filename}'
                         with open(file=video_path, mode='wb') as file:
-                            for v_data in video.iter_content(chunk_size=chunk_size):
-                                file.write(v_data)
-                                size = size + len(v_data)
-                                print('\r' + '[  Download  ]: %s%.2f%%' % ('>'*int(size*50/content_size), float(size/content_size*100)), end=' ')        
+                            for data in video.iter_content(chunk_size=chunk_size):
+                                file.write(data)
+                                size = size + len(data)
+                                print('\r' + '[  Download  ]: %s%.2f%%' % ('>'*int(size*50/content_size), float(size/content_size*100)), end=' ')
                     end_download_time = time.time()
                     download_time = end_download_time - start_download_time
                     print(f'\n[  Download  ]: Thời gian: {download_time:.2f}s, Kích thước: {MB_size:.2f}MB')
                     print('-' * 120)
                     break
                 except Exception as bug:
-                    # print(bug)
+                    #print(bug)
                     continue
 
 def main():
