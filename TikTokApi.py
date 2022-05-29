@@ -1,4 +1,4 @@
-import os, re,  requests, json, time, sys
+import os, re, requests, json, time, sys
 
 
 class TiktokDownload():
@@ -25,7 +25,7 @@ class TiktokDownload():
             if self.check_input:
                 self.is_userpage, self.user_title, self.url_input = self.check_user_page(self.url_input)
                 self.save_folder = 'Tiktok Multiple' if self.is_userpage else'Tiktok One'
-                self.folder_save_path = f'{self.root_dir}\{self.save_folder}\{self.user_title}'
+                self.folder_save_path = f'{self.root_dir}\{self.save_folder}'
                 self.json_file_path = f'{self.root_dir}\{self.save_folder}\{self.user_title}.json'
 
                 try:
@@ -103,17 +103,36 @@ class TiktokDownload():
                     print('-' * 120)
         return url_input, check_input
 
-    def get_data(self, url_input):
-        username = re.findall('\/@(.*)', url_input)[0]
-        api_get_user_id = f"https://api-t2.tiktokv.com/aweme/v1/discover/search/?keyword={username}&cursor=0&count=10&type=1&device_id=6158568364873266588&aid=1233"
-        js = requests.get(url=api_get_user_id, headers=self.headers).json()
-        user_id = str(js['user_list'][0]['user_info']['uid'])
+    def request_deal(self, url, max_again=3):
+        for req_again in range(max_again):
+            try:
+                return requests.get(url, headers=self.headers, timeout=10)
+            except requests.exceptions.RequestException as bug:
+                print(bug)
+                continue
+
+    def get_user_id(self, input_url, max_again=3):
+        for get_again in range(max_again):
+            try:
+                user_name = re.findall('tiktok.com\/@(.*)', input_url.split('?')[0])[0]
+                api_user_id = "https://t.tiktok.com/node/share/user/@{}?aid=1988".format(user_name)
+                user_data = self.request_deal(api_user_id).json()
+                try:
+                    return str(user_data["userInfo"]["user"]["id"])
+                except:
+                    return str(user_data['seoProps']['pageId'])
+            except Exception as bug:
+                # print(bug)
+                continue
+
+    def get_data(self, input_url):
+        user_id = self.get_user_id(input_url)
         min_cursor, max_cursor = '0', '0'
         video_data = []
         done = False
         while not done:
             data_url = 'https://www.tiktok.com/share/item/list?id={:s}&type=1&count=100&maxCursor={:s}&minCursor={:s}'.format(user_id, max_cursor, min_cursor)
-            response = requests.get(data_url, headers=self.headers, stream=True, timeout=15)
+            response = self.request_deal(data_url)
             if response.status_code == 200:
                 js = response.json()
 
@@ -141,10 +160,10 @@ class TiktokDownload():
     def download(self, video_data):
         number_of_videos = len(video_data)
         for video_number in range(number_of_videos):
-            js = json.loads(requests.get(url=video_data[video_number]['video_api'], headers=self.headers).text)
+            js = json.loads(self.request_deal(video_data[video_number]['video_api']).text)
             try:
                 # nickname = str(js['item_list'][0]['author']['nickname']) #douyin
-                nickname = str(js["aweme_details"][0]['author']["nickname"])
+                unique_id = str(js["aweme_details"][0]['author']["unique_id"])
             except Exception as bug:
                 # print(bug)
                 # nickname = 'Empty Nickname'
@@ -153,12 +172,12 @@ class TiktokDownload():
                 print('-' * 120)
 
             try:
-                folder_nickname_path = f'{self.folder_save_path}\{nickname}'
+                folder_nickname_path = f'{self.folder_save_path}\{unique_id}'
                 if not os.path.exists(folder_nickname_path): 
                     os.makedirs(folder_nickname_path)
             except Exception as bug:
                 # print(bug)
-                print(f'[ Feedback ]: Không tạo được thư mục {nickname}!\r')
+                print(f'[ Feedback ]: Không tạo được thư mục {unique_id}!\r')
                 print('-' * 120)
                 return 
             
@@ -194,7 +213,7 @@ class TiktokDownload():
                     start_download_time = time.time()
                     size = 0
                     chunk_size = 1024
-                    video = requests.get(url=video_url_no_watermark, headers=self.headers)
+                    video = self.request_deal(video_url_no_watermark)
                     content_size = int(video.headers['content-length'])
                     MB_size = content_size / chunk_size / 1024
 
@@ -215,5 +234,9 @@ class TiktokDownload():
                     continue
 
 if __name__ == '__main__':
-    tiktok_download = TiktokDownload()
-    tiktok_download.auto_downoad()
+    try:
+        tiktok_download = TiktokDownload()
+        tiktok_download.auto_downoad()
+    except Exception as bug:
+        print(bug)
+        os.system('pause')

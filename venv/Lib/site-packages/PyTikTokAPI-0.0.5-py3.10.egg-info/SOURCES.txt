@@ -1,0 +1,16 @@
+MANIFEST.in
+README.md
+setup.cfg
+setup.py
+PyTikTokAPI.egg-info/PKG-INFO
+PyTikTokAPI.egg-info/SOURCES.txt
+PyTikTokAPI.egg-info/dependency_links.txt
+PyTikTokAPI.egg-info/requires.txt
+PyTikTokAPI.egg-info/top_level.txt
+TikTokAPI/__init__.py
+TikTokAPI/tiktok_browser.py
+TikTokAPI/tiktokapi.py
+TikTokAPI/utils.py
+TikTokAPI/website/acrawler.js
+TikTokAPI/website/acrawler_raw.js
+TikTokAPI/website/tiktok.html
